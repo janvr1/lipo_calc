@@ -1,6 +1,6 @@
 # LiPo Field Charge Calculator
 
-A single-page web calculator that estimates how many times you can recharge a
+A single-page web calculator (in Slovenian, branded for [LiPo.si](https://www.lipo.si/)) that estimates how many times you can recharge a
 LiPo pack from a larger "field battery" (big LiPo, LiFePO₄, or 12 V lead-acid/AGM).
 
 ## How it works

@@ -1,34 +1,40 @@
 <!doctype html>
-<html lang="en">
+<html lang="sl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>LiPo Field Charge Calculator</title>
-<meta name="description" content="Calculate how many times you can recharge a LiPo pack from a larger field battery.">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔋</text></svg>">
+<title>Kalkulator polnjenja na terenu | LiPo.si</title>
+<meta name="description" content="Izračunajte, kolikokrat lahko z večjim terenskim akumulatorjem napolnite svoje LiPo akumulatorje.">
+<link rel="icon" href="https://www.lipo.si/wp-content/uploads/2023/04/lipo-1.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f5f6f8;
+    --brand: #299525;
+    --brand-text: #1f7a1c;
+    --brand-soft: #e7f4e6;
+    --header: #333333;
+    --bg: #f4f5f4;
     --card: #ffffff;
-    --text: #1b1f24;
-    --muted: #5d6673;
-    --border: #d9dde3;
-    --accent: #1f7a4d;
-    --accent-soft: #e3f3ea;
+    --text: #0a0a0a;
+    --muted: #5a615a;
+    --border: #dcdfdc;
     --warn: #a15c00;
     --input-bg: #ffffff;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #12151a;
-      --card: #1b2028;
-      --text: #e6e9ee;
-      --muted: #9aa4b2;
-      --border: #2e3540;
-      --accent: #4cc38a;
-      --accent-soft: #183326;
+      --brand: #3dbb38;
+      --brand-text: #5fd35a;
+      --brand-soft: #16301a;
+      --bg: #141614;
+      --card: #1d201d;
+      --text: #e8ebe8;
+      --muted: #9ea69e;
+      --border: #2f352f;
       --warn: #f0b04a;
-      --input-bg: #141920;
+      --input-bg: #151815;
     }
   }
   * { box-sizing: border-box; }
@@ -36,20 +42,41 @@
     margin: 0;
     background: var(--bg);
     color: var(--text);
-    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font: 16px/1.5 Archivo, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
-  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 48px; }
-  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  a { color: var(--brand-text); }
+
+  /* Header */
+  header.site { background: var(--header); color: #fff; }
+  .bar {
+    max-width: 960px; margin: 0 auto; padding: 10px 16px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+  .bar img { display: block; height: 48px; width: auto; }
+  nav.top { display: flex; gap: 18px; flex-wrap: wrap; }
+  nav.top a {
+    color: #fff; text-decoration: none; font-weight: 500; font-size: .9rem;
+    text-transform: uppercase; letter-spacing: .02em;
+    padding: 4px 0; border-bottom: 2px solid transparent;
+  }
+  nav.top a:hover { border-bottom-color: var(--brand); }
+  .stripe { height: 4px; background: var(--brand); }
+
+  main { max-width: 960px; margin: 0 auto; padding: 28px 16px 48px; }
+  h1 { font-size: 1.75rem; font-weight: 800; margin: 0 0 6px; line-height: 1.2; }
   .sub { color: var(--muted); margin: 0 0 24px; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  @media (max-width: 680px) { .grid { grid-template-columns: 1fr; } }
+  @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } nav.top { gap: 2px 14px; } .bar img { height: 40px; } }
   section.card {
     background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 10px;
     padding: 16px 18px;
   }
-  h2 { font-size: 1.05rem; margin: 0 0 12px; }
+  h2 {
+    font-size: 1.05rem; font-weight: 700; margin: 0 0 12px;
+    padding-left: 10px; border-left: 4px solid var(--brand);
+  }
   label { display: block; font-size: .9rem; color: var(--muted); margin: 10px 0 4px; }
   .row { display: flex; gap: 8px; }
   .row > * { flex: 1; min-width: 0; }
@@ -60,24 +87,27 @@
     color: var(--text);
     background: var(--input-bg);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: 6px;
   }
-  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  input:disabled { opacity: .5; }
+  input:focus, select:focus { outline: 2px solid var(--brand); outline-offset: -1px; }
   .hint { font-size: .8rem; color: var(--muted); margin-top: 3px; }
+
   .result {
     margin-top: 16px;
-    background: var(--accent-soft);
-    border: 1px solid var(--accent);
-    border-radius: 12px;
+    background: var(--brand-soft);
+    border: 2px solid var(--brand);
+    border-radius: 10px;
     padding: 20px;
     text-align: center;
   }
-  .big { font-size: 3.2rem; font-weight: 700; color: var(--accent); line-height: 1.1; }
-  .big small { font-size: 1.1rem; font-weight: 500; color: var(--muted); }
+  .big { font-size: 3.4rem; font-weight: 800; color: var(--brand-text); line-height: 1.1; }
+  #r_label { font-size: 1.1rem; font-weight: 500; }
+  #r_sets { color: var(--muted); margin-top: 4px; }
   .breakdown {
     margin-top: 16px;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
     gap: 10px;
     text-align: left;
   }
@@ -85,64 +115,110 @@
   .stat b { display: block; font-size: 1.15rem; }
   .stat span { font-size: .8rem; color: var(--muted); }
   .warn { color: var(--warn); font-size: .9rem; margin-top: 10px; }
+  .warn:empty { display: none; }
+
   details { margin-top: 20px; color: var(--muted); font-size: .9rem; }
-  summary { cursor: pointer; color: var(--text); }
+  summary { cursor: pointer; color: var(--text); font-weight: 500; }
   code { font-size: .85rem; }
-  footer { margin-top: 32px; font-size: .8rem; color: var(--muted); text-align: center; }
+
+  /* Links */
+  .links { margin-top: 24px; }
+  .links ul {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px;
+  }
+  .links li a {
+    display: block; height: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border); border-radius: 8px;
+    text-decoration: none; color: var(--text);
+    background: var(--input-bg);
+  }
+  .links li a:hover { border-color: var(--brand); }
+  .links li a strong { display: block; color: var(--brand-text); font-weight: 700; }
+  .links li a span { font-size: .85rem; color: var(--muted); }
+  .cta {
+    display: inline-block; margin-top: 14px;
+    background: var(--brand); color: #fff; text-decoration: none; font-weight: 700;
+    padding: 10px 18px; border-radius: 6px;
+  }
+  .cta:hover { filter: brightness(1.08); }
+
+  footer.site { background: var(--header); color: #cfd3cf; font-size: .85rem; }
+  footer .inner {
+    max-width: 960px; margin: 0 auto; padding: 20px 16px;
+    display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; align-items: center;
+  }
+  footer a { color: #fff; }
+  footer .social { display: flex; gap: 14px; }
+  footer .note { flex-basis: 100%; color: #a9aea9; font-size: .8rem; }
 </style>
 </head>
 <body>
+<header class="site">
+  <div class="bar">
+    <a href="https://www.lipo.si/" aria-label="LiPo.si – domov"><img src="assets/lipo-logo.svg" alt="LiPo.si" width="101" height="48"></a>
+    <nav class="top" aria-label="Povezave na LiPo.si">
+      <a href="https://www.lipo.si/kategorija-izdelka/akumulatorji/">Akumulatorji</a>
+      <a href="https://www.lipo.si/kategorija-izdelka/polnilna-tehnika/">Polnilna tehnika</a>
+      <a href="https://www.lipo.si/objave/">Akademija</a>
+      <a href="https://www.lipo.si/">Trgovina</a>
+    </nav>
+  </div>
+  <div class="stripe"></div>
+</header>
+
 <main>
-  <h1>🔋 LiPo Field Charge Calculator</h1>
-  <p class="sub">How many times can your field battery recharge your LiPo packs?</p>
+  <h1>Kolikokrat lahko napolnim LiPo na terenu?</h1>
+  <p class="sub">Izračunajte, kolikokrat lahko z večjim terenskim akumulatorjem napolnite svoje LiPo akumulatorje.</p>
 
   <div class="grid">
     <section class="card">
-      <h2>Pack to charge</h2>
+      <h2>Akumulator, ki ga polnite</h2>
       <div class="row">
         <div>
-          <label for="p_cells">Cells (S)</label>
+          <label for="p_cells">Število celic (S)</label>
           <input id="p_cells" type="number" min="1" max="14" step="1" value="4">
         </div>
         <div>
-          <label for="p_chem">Type</label>
+          <label for="p_chem">Tip</label>
           <select id="p_chem">
-            <option value="3.7">LiPo (3.7 V)</option>
-            <option value="3.8">LiHV (3.8 V)</option>
-            <option value="3.6">Li-ion (3.6 V)</option>
-            <option value="3.2">LiFePO₄ (3.2 V)</option>
+            <option value="3.7">LiPo (3,7 V)</option>
+            <option value="3.8">LiHV (3,8 V)</option>
+            <option value="3.6">Li-Ion (3,6 V)</option>
+            <option value="3.2">LiFePO₄ (3,2 V)</option>
           </select>
         </div>
       </div>
-      <label for="p_cap">Capacity (mAh)</label>
+      <label for="p_cap">Kapaciteta (mAh)</label>
       <input id="p_cap" type="number" min="1" step="50" value="1500">
-      <label for="p_cnt">Number of packs</label>
+      <label for="p_cnt">Število akumulatorjev</label>
       <input id="p_cnt" type="number" min="1" step="1" value="1">
-      <div class="hint">Results also show how many full sets of packs you can recharge.</div>
-      <label for="p_dod">Capacity used per flight (%)</label>
+      <div class="hint">Prikazano bo tudi, kolikokrat lahko napolnite celoten komplet.</div>
+      <label for="p_dod">Porabljena kapaciteta na let (%)</label>
       <input id="p_dod" type="number" min="1" max="100" step="5" value="80">
-      <div class="hint">Landing at ~3.7 V/cell under rest ≈ 80% used.</div>
+      <div class="hint">Pristanek pri ~3,7 V/celico (v mirovanju) ≈ 80 % porabljeno.</div>
     </section>
 
     <section class="card">
-      <h2>Field battery</h2>
-      <label for="f_type">Type</label>
+      <h2>Terenski akumulator</h2>
+      <label for="f_type">Tip</label>
       <select id="f_type">
-        <option value="lipo">LiPo / Li-ion pack</option>
+        <option value="lipo">LiPo / Li-Ion paket</option>
         <option value="lifepo4">LiFePO₄</option>
-        <option value="lead">Lead-acid / AGM (12 V)</option>
-        <option value="custom">Custom voltage</option>
+        <option value="lead">Svinčev / AGM (12 V)</option>
+        <option value="custom">Poljubna napetost</option>
       </select>
       <div class="row">
         <div>
-          <label for="f_volt">Nominal voltage (V)</label>
+          <label for="f_volt">Nazivna napetost (V)</label>
           <input id="f_volt" type="number" min="1" step="0.1" value="22.2">
         </div>
         <div>
-          <label for="f_cap">Capacity</label>
+          <label for="f_cap">Kapaciteta</label>
           <div class="row">
             <input id="f_cap" type="number" min="0" step="1" value="16000">
-            <select id="f_unit" style="flex:0 0 78px">
+            <select id="f_unit" style="flex:0 0 80px" aria-label="Enota kapacitete">
               <option value="mAh">mAh</option>
               <option value="Ah">Ah</option>
               <option value="Wh">Wh</option>
@@ -150,41 +226,74 @@
           </div>
         </div>
       </div>
-      <div class="hint" id="f_volt_hint">6S LiPo = 22.2 V, 4S = 14.8 V, 3S = 11.1 V</div>
-      <label for="f_dod">Usable capacity (%)</label>
+      <div class="hint" id="f_volt_hint"></div>
+      <label for="f_dod">Uporabna kapaciteta (%)</label>
       <input id="f_dod" type="number" min="1" max="100" step="5" value="80">
-      <div class="hint" id="f_dod_hint">LiPo ~80%, LiFePO₄ ~90%, lead-acid ~50% to avoid damage.</div>
-      <label for="eff">Charger efficiency (%)</label>
+      <div class="hint">LiPo ~80 %, LiFePO₄ ~90 %, svinčev ~50 % – da akumulatorja ne poškodujete.</div>
+      <label for="eff">Izkoristek polnilnika (%)</label>
       <input id="eff" type="number" min="1" max="100" step="1" value="85">
-      <div class="hint">Typical DC hobby chargers: 80–90%.</div>
+      <div class="hint">Tipični DC modelarski polnilniki: 80–90 %.</div>
     </section>
   </div>
 
   <div class="result" aria-live="polite">
     <div class="big" id="r_charges">–</div>
-    <div id="r_label">pack charges</div>
+    <div id="r_label">polnjenj</div>
     <div id="r_sets"></div>
     <div class="breakdown">
-      <div class="stat"><b id="r_field_wh">–</b><span>Usable field energy</span></div>
-      <div class="stat"><b id="r_out_wh">–</b><span>Delivered after charger losses</span></div>
-      <div class="stat"><b id="r_pack_wh">–</b><span>Energy per pack charge</span></div>
-      <div class="stat"><b id="r_exact">–</b><span>Exact (fractional) charges</span></div>
+      <div class="stat"><b id="r_field_wh">–</b><span>Uporabna energija terenskega akumulatorja</span></div>
+      <div class="stat"><b id="r_out_wh">–</b><span>Oddana energija po izgubah polnilnika</span></div>
+      <div class="stat"><b id="r_pack_wh">–</b><span>Energija za eno polnjenje</span></div>
+      <div class="stat"><b id="r_exact">–</b><span>Natančno število polnjenj</span></div>
     </div>
     <div class="warn" id="r_warn"></div>
   </div>
 
   <details>
-    <summary>How is this calculated?</summary>
-    <p>Everything is converted to energy (watt-hours), since the two batteries usually have different voltages:</p>
-    <p><code>Field Wh = V × Ah × usable% </code><br>
-       <code>Delivered Wh = Field Wh × charger efficiency</code><br>
-       <code>Pack Wh per charge = cells × cell V × Ah × used%</code><br>
-       <code>Charges = Delivered Wh ÷ Pack Wh</code></p>
-    <p>It's an estimate: cold weather, high charge rates, a charger that steps voltage up (field voltage lower than pack voltage) and older batteries all reduce the real number.</p>
+    <summary>Kako se izračuna?</summary>
+    <p>Vse pretvorimo v energijo (vatne ure, Wh), saj imata akumulatorja običajno različni napetosti:</p>
+    <p><code>Energija terenskega = U × Ah × uporabna %</code><br>
+       <code>Oddana energija = energija terenskega × izkoristek polnilnika</code><br>
+       <code>Energija na polnjenje = celice × U celice × Ah × porabljena %</code><br>
+       <code>Število polnjenj = oddana energija ÷ energija na polnjenje</code></p>
+    <p>Rezultat je ocena: mraz, visoki polnilni tokovi, polnilnik, ki mora napetost dvigovati (terenski akumulator z nižjo napetostjo od polnjenega), in starejši akumulatorji dejansko število polnjenj zmanjšajo.</p>
   </details>
 
-  <footer>Inputs are remembered in your browser. Estimates only — always monitor charging LiPo packs.</footer>
+  <section class="card links">
+    <h2>Oprema za polnjenje na terenu</h2>
+    <ul>
+      <li><a href="https://www.lipo.si/izdelek/komplet-gens-ace-imars-d300-plus-12v-30ah-lfp-pribor/">
+        <strong>Komplet za teren</strong><span>Gens Ace iMars D300 Plus + 12 V 30 Ah LiFePO₄ + pribor</span></a></li>
+      <li><a href="https://www.lipo.si/kategorija-izdelka/akumulatorji/lifepo4/">
+        <strong>LiFePO₄ akumulatorji</strong><span>Lahki, dolgoživi terenski akumulatorji</span></a></li>
+      <li><a href="https://www.lipo.si/kategorija-izdelka/polnilna-tehnika/polnilniki/">
+        <strong>Polnilniki</strong><span>DC in AC/DC modelarski polnilniki</span></a></li>
+      <li><a href="https://www.lipo.si/kategorija-izdelka/polnilna-tehnika/pribor-polnilna-tehnika/polnjenje-v-avtu/">
+        <strong>Polnjenje v avtu</strong><span>Kabli in pribor za polnjenje iz avtomobila</span></a></li>
+      <li><a href="https://www.lipo.si/kategorija-izdelka/polnilna-tehnika/pribor-polnilna-tehnika/vzporedno-polnjenje/">
+        <strong>Vzporedno polnjenje</strong><span>Napolnite več akumulatorjev hkrati</span></a></li>
+      <li><a href="https://www.lipo.si/kategorija-izdelka/akumulatorji/lipo/">
+        <strong>LiPo akumulatorji</strong><span>Od 1S do 14S</span></a></li>
+      <li><a href="https://www.lipo.si/kategorija-izdelka/pribor/zascitne-vrece/">
+        <strong>Zaščitne vreče</strong><span>Varno polnjenje in prevoz</span></a></li>
+      <li><a href="https://www.lipo.si/uporaba-lipo-akumulatorjev/">
+        <strong>Uporaba LiPo akumulatorjev</strong><span>Varnostna opozorila in nasveti</span></a></li>
+    </ul>
+    <a class="cta" href="https://www.lipo.si/">Obiščite trgovino LiPo.si →</a>
+  </section>
 </main>
+
+<footer class="site">
+  <div class="inner">
+    <div><strong>LiPo.si</strong> · <a href="mailto:info@lipo.si">info@lipo.si</a> · <a href="tel:+38640513482">040 513 482</a></div>
+    <div class="social">
+      <a href="https://www.facebook.com/GensAceSlovenija">Facebook</a>
+      <a href="https://www.instagram.com/liposlav/">Instagram</a>
+      <a href="https://www.youtube.com/@LiPo-si">YouTube</a>
+    </div>
+    <div class="note">Vnosi se shranijo v vašem brskalniku. Izračun je le ocena – LiPo akumulatorjev med polnjenjem nikoli ne puščajte brez nadzora.</div>
+  </div>
+</footer>
 
 <script>
 (function () {
@@ -193,21 +302,34 @@
   const STORE = "lipo_calc_v1";
 
   const presets = {
-    lipo:    { volt: 22.2, dod: 80, hint: "6S LiPo = 22.2 V, 4S = 14.8 V, 3S = 11.1 V" },
-    lifepo4: { volt: 12.8, dod: 90, hint: "4S LiFePO₄ = 12.8 V, 8S = 25.6 V" },
-    lead:    { volt: 12,   dod: 50, hint: "Car / AGM / deep-cycle battery = 12 V" },
-    custom:  { volt: null, dod: null, hint: "Enter the nominal voltage of your battery." }
+    lipo:    { volt: 22.2, dod: 80, hint: "6S LiPo = 22,2 V, 4S = 14,8 V, 3S = 11,1 V" },
+    lifepo4: { volt: 12.8, dod: 90, hint: "4S LiFePO₄ = 12,8 V, 8S = 25,6 V" },
+    lead:    { volt: 12,   dod: 50, hint: "Avtomobilski / AGM / ciklični akumulator = 12 V" },
+    custom:  { volt: null, dod: null, hint: "Vnesite nazivno napetost svojega akumulatorja." }
   };
 
-  const num = (id) => parseFloat($(id).value);
-  const fmt = (x, d = 1) => Number.isFinite(x) ? x.toLocaleString(undefined, { maximumFractionDigits: d, minimumFractionDigits: d }) : "–";
+  // Accept both "22.2" and "22,2"
+  const num = (id) => parseFloat(String($(id).value).replace(",", "."));
+  const fmt = (x, d = 1) => Number.isFinite(x)
+    ? x.toLocaleString("sl-SI", { maximumFractionDigits: d, minimumFractionDigits: d })
+    : "–";
+
+  // Slovenian plural: 1 polnjenje, 2 polnjenji, 3–4 polnjenja, 5+ polnjenj
+  function plural(n, forms) {
+    const m = n % 100;
+    if (m === 1) return forms[0];
+    if (m === 2) return forms[1];
+    if (m === 3 || m === 4) return forms[2];
+    return forms[3];
+  }
 
   function load() {
     try {
       const saved = JSON.parse(localStorage.getItem(STORE) || "null");
       if (saved) ids.forEach((id) => { if (saved[id] != null) $(id).value = saved[id]; });
     } catch (e) {}
-    $("f_volt_hint").textContent = presets[$("f_type").value].hint;
+    const p = presets[$("f_type").value] || presets.custom;
+    $("f_volt_hint").textContent = p.hint;
   }
 
   function save() {
@@ -236,10 +358,17 @@
     const charges = ok ? Math.floor(exact + 1e-9) : NaN;
 
     $("r_charges").textContent = ok ? charges : "–";
-    $("r_label").textContent = charges === 1 ? "pack charge" : "pack charges";
-    $("r_sets").textContent = ok && packs > 1
-      ? `= ${Math.floor(exact / packs + 1e-9)} full set(s) of ${packs} packs`
-      : "";
+    $("r_label").textContent = ok
+      ? plural(charges, ["polnjenje", "polnjenji", "polnjenja", "polnjenj"])
+      : "polnjenj";
+
+    if (ok && packs > 1) {
+      const sets = Math.floor(exact / packs + 1e-9);
+      $("r_sets").textContent = `Celoten komplet ${packs} akumulatorjev lahko napolnite ${sets}-krat.`;
+    } else {
+      $("r_sets").textContent = "";
+    }
+
     $("r_field_wh").textContent = fmt(fieldWh) + " Wh";
     $("r_out_wh").textContent = fmt(outWh) + " Wh";
     $("r_pack_wh").textContent = fmt(packWh) + " Wh";
@@ -247,7 +376,7 @@
 
     let warn = "";
     if (ok && unit !== "Wh" && fV < packV) {
-      warn = `Field battery (${fmt(fV)} V) is below the pack voltage (${fmt(packV)} V) — your charger must be able to boost, and efficiency is usually lower.`;
+      warn = `Terenski akumulator (${fmt(fV)} V) ima nižjo napetost kot akumulator, ki ga polnite (${fmt(packV)} V) – polnilnik mora napetost dvigniti, izkoristek je zato običajno nižji.`;
     }
     $("r_warn").textContent = warn;
   }

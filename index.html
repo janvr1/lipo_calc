@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LiPo Field Charge Calculator</title>
+<meta name="description" content="Calculate how many times you can recharge a LiPo pack from a larger field battery.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔋</text></svg>">
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --card: #ffffff;
+    --text: #1b1f24;
+    --muted: #5d6673;
+    --border: #d9dde3;
+    --accent: #1f7a4d;
+    --accent-soft: #e3f3ea;
+    --warn: #a15c00;
+    --input-bg: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12151a;
+      --card: #1b2028;
+      --text: #e6e9ee;
+      --muted: #9aa4b2;
+      --border: #2e3540;
+      --accent: #4cc38a;
+      --accent-soft: #183326;
+      --warn: #f0b04a;
+      --input-bg: #141920;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 680px) { .grid { grid-template-columns: 1fr; } }
+  section.card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+  }
+  h2 { font-size: 1.05rem; margin: 0 0 12px; }
+  label { display: block; font-size: .9rem; color: var(--muted); margin: 10px 0 4px; }
+  .row { display: flex; gap: 8px; }
+  .row > * { flex: 1; min-width: 0; }
+  input, select {
+    width: 100%;
+    padding: 8px 10px;
+    font: inherit;
+    color: var(--text);
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .hint { font-size: .8rem; color: var(--muted); margin-top: 3px; }
+  .result {
+    margin-top: 16px;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+  }
+  .big { font-size: 3.2rem; font-weight: 700; color: var(--accent); line-height: 1.1; }
+  .big small { font-size: 1.1rem; font-weight: 500; color: var(--muted); }
+  .breakdown {
+    margin-top: 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+    text-align: left;
+  }
+  .stat { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+  .stat b { display: block; font-size: 1.15rem; }
+  .stat span { font-size: .8rem; color: var(--muted); }
+  .warn { color: var(--warn); font-size: .9rem; margin-top: 10px; }
+  details { margin-top: 20px; color: var(--muted); font-size: .9rem; }
+  summary { cursor: pointer; color: var(--text); }
+  code { font-size: .85rem; }
+  footer { margin-top: 32px; font-size: .8rem; color: var(--muted); text-align: center; }
+</style>
+</head>
+<body>
+<main>
+  <h1>🔋 LiPo Field Charge Calculator</h1>
+  <p class="sub">How many times can your field battery recharge your LiPo packs?</p>
+
+  <div class="grid">
+    <section class="card">
+      <h2>Pack to charge</h2>
+      <div class="row">
+        <div>
+          <label for="p_cells">Cells (S)</label>
+          <input id="p_cells" type="number" min="1" max="14" step="1" value="4">
+        </div>
+        <div>
+          <label for="p_chem">Type</label>
+          <select id="p_chem">
+            <option value="3.7">LiPo (3.7 V)</option>
+            <option value="3.8">LiHV (3.8 V)</option>
+            <option value="3.6">Li-ion (3.6 V)</option>
+            <option value="3.2">LiFePO₄ (3.2 V)</option>
+          </select>
+        </div>
+      </div>
+      <label for="p_cap">Capacity (mAh)</label>
+      <input id="p_cap" type="number" min="1" step="50" value="1500">
+      <label for="p_cnt">Number of packs</label>
+      <input id="p_cnt" type="number" min="1" step="1" value="1">
+      <div class="hint">Results also show how many full sets of packs you can recharge.</div>
+      <label for="p_dod">Capacity used per flight (%)</label>
+      <input id="p_dod" type="number" min="1" max="100" step="5" value="80">
+      <div class="hint">Landing at ~3.7 V/cell under rest ≈ 80% used.</div>
+    </section>
+
+    <section class="card">
+      <h2>Field battery</h2>
+      <label for="f_type">Type</label>
+      <select id="f_type">
+        <option value="lipo">LiPo / Li-ion pack</option>
+        <option value="lifepo4">LiFePO₄</option>
+        <option value="lead">Lead-acid / AGM (12 V)</option>
+        <option value="custom">Custom voltage</option>
+      </select>
+      <div class="row">
+        <div>
+          <label for="f_volt">Nominal voltage (V)</label>
+          <input id="f_volt" type="number" min="1" step="0.1" value="22.2">
+        </div>
+        <div>
+          <label for="f_cap">Capacity</label>
+          <div class="row">
+            <input id="f_cap" type="number" min="0" step="1" value="16000">
+            <select id="f_unit" style="flex:0 0 78px">
+              <option value="mAh">mAh</option>
+              <option value="Ah">Ah</option>
+              <option value="Wh">Wh</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="hint" id="f_volt_hint">6S LiPo = 22.2 V, 4S = 14.8 V, 3S = 11.1 V</div>
+      <label for="f_dod">Usable capacity (%)</label>
+      <input id="f_dod" type="number" min="1" max="100" step="5" value="80">
+      <div class="hint" id="f_dod_hint">LiPo ~80%, LiFePO₄ ~90%, lead-acid ~50% to avoid damage.</div>
+      <label for="eff">Charger efficiency (%)</label>
+      <input id="eff" type="number" min="1" max="100" step="1" value="85">
+      <div class="hint">Typical DC hobby chargers: 80–90%.</div>
+    </section>
+  </div>
+
+  <div class="result" aria-live="polite">
+    <div class="big" id="r_charges">–</div>
+    <div id="r_label">pack charges</div>
+    <div id="r_sets"></div>
+    <div class="breakdown">
+      <div class="stat"><b id="r_field_wh">–</b><span>Usable field energy</span></div>
+      <div class="stat"><b id="r_out_wh">–</b><span>Delivered after charger losses</span></div>
+      <div class="stat"><b id="r_pack_wh">–</b><span>Energy per pack charge</span></div>
+      <div class="stat"><b id="r_exact">–</b><span>Exact (fractional) charges</span></div>
+    </div>
+    <div class="warn" id="r_warn"></div>
+  </div>
+
+  <details>
+    <summary>How is this calculated?</summary>
+    <p>Everything is converted to energy (watt-hours), since the two batteries usually have different voltages:</p>
+    <p><code>Field Wh = V × Ah × usable% </code><br>
+       <code>Delivered Wh = Field Wh × charger efficiency</code><br>
+       <code>Pack Wh per charge = cells × cell V × Ah × used%</code><br>
+       <code>Charges = Delivered Wh ÷ Pack Wh</code></p>
+    <p>It's an estimate: cold weather, high charge rates, a charger that steps voltage up (field voltage lower than pack voltage) and older batteries all reduce the real number.</p>
+  </details>
+
+  <footer>Inputs are remembered in your browser. Estimates only — always monitor charging LiPo packs.</footer>
+</main>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const ids = ["p_cells", "p_chem", "p_cap", "p_cnt", "p_dod", "f_type", "f_volt", "f_cap", "f_unit", "f_dod", "eff"];
+  const STORE = "lipo_calc_v1";
+
+  const presets = {
+    lipo:    { volt: 22.2, dod: 80, hint: "6S LiPo = 22.2 V, 4S = 14.8 V, 3S = 11.1 V" },
+    lifepo4: { volt: 12.8, dod: 90, hint: "4S LiFePO₄ = 12.8 V, 8S = 25.6 V" },
+    lead:    { volt: 12,   dod: 50, hint: "Car / AGM / deep-cycle battery = 12 V" },
+    custom:  { volt: null, dod: null, hint: "Enter the nominal voltage of your battery." }
+  };
+
+  const num = (id) => parseFloat($(id).value);
+  const fmt = (x, d = 1) => Number.isFinite(x) ? x.toLocaleString(undefined, { maximumFractionDigits: d, minimumFractionDigits: d }) : "–";
+
+  function load() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORE) || "null");
+      if (saved) ids.forEach((id) => { if (saved[id] != null) $(id).value = saved[id]; });
+    } catch (e) {}
+    $("f_volt_hint").textContent = presets[$("f_type").value].hint;
+  }
+
+  function save() {
+    try {
+      const data = {};
+      ids.forEach((id) => (data[id] = $(id).value));
+      localStorage.setItem(STORE, JSON.stringify(data));
+    } catch (e) {}
+  }
+
+  function calc() {
+    const cells = num("p_cells"), cellV = num("p_chem"), pCap = num("p_cap") / 1000;
+    const packs = Math.max(1, Math.round(num("p_cnt")) || 1);
+    const pUsed = num("p_dod") / 100;
+    const fV = num("f_volt"), fCap = num("f_cap"), unit = $("f_unit").value;
+    const fUse = num("f_dod") / 100, eff = num("eff") / 100;
+
+    const fieldWhRaw = unit === "Wh" ? fCap : fV * (unit === "Ah" ? fCap : fCap / 1000);
+    const fieldWh = fieldWhRaw * fUse;
+    const outWh = fieldWh * eff;
+    const packV = cells * cellV;
+    const packWh = packV * pCap * pUsed;
+    const exact = outWh / packWh;
+
+    const ok = [fieldWh, outWh, packWh, exact].every(Number.isFinite) && packWh > 0;
+    const charges = ok ? Math.floor(exact + 1e-9) : NaN;
+
+    $("r_charges").textContent = ok ? charges : "–";
+    $("r_label").textContent = charges === 1 ? "pack charge" : "pack charges";
+    $("r_sets").textContent = ok && packs > 1
+      ? `= ${Math.floor(exact / packs + 1e-9)} full set(s) of ${packs} packs`
+      : "";
+    $("r_field_wh").textContent = fmt(fieldWh) + " Wh";
+    $("r_out_wh").textContent = fmt(outWh) + " Wh";
+    $("r_pack_wh").textContent = fmt(packWh) + " Wh";
+    $("r_exact").textContent = fmt(exact, 2);
+
+    let warn = "";
+    if (ok && unit !== "Wh" && fV < packV) {
+      warn = `Field battery (${fmt(fV)} V) is below the pack voltage (${fmt(packV)} V) — your charger must be able to boost, and efficiency is usually lower.`;
+    }
+    $("r_warn").textContent = warn;
+  }
+
+  $("f_type").addEventListener("change", () => {
+    const p = presets[$("f_type").value];
+    if (p.volt != null) $("f_volt").value = p.volt;
+    if (p.dod != null) $("f_dod").value = p.dod;
+    $("f_volt_hint").textContent = p.hint;
+    calc(); save();
+  });
+
+  $("f_unit").addEventListener("change", () => {
+    $("f_volt").disabled = $("f_unit").value === "Wh";
+    calc(); save();
+  });
+
+  ids.forEach((id) => $(id).addEventListener("input", () => { calc(); save(); }));
+
+  load();
+  $("f_volt").disabled = $("f_unit").value === "Wh";
+  calc();
+})();
+</script>
+</body>
+</html>

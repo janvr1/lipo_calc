@@ -92,6 +92,23 @@
   input:disabled { opacity: .5; }
   input:focus, select:focus { outline: 2px solid var(--brand); outline-offset: -1px; }
   .hint { font-size: .8rem; color: var(--muted); margin-top: 3px; }
+  [hidden] { display: none !important; }
+
+  /* Mode switch */
+  .modes {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+    border: 2px solid var(--brand); border-radius: 10px; overflow: hidden;
+    margin: 0 0 20px; background: var(--card);
+  }
+  .modes input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+  .modes label {
+    margin: 0; padding: 12px 14px; cursor: pointer; text-align: center;
+    color: var(--text); font-weight: 700; font-size: .95rem; line-height: 1.3;
+  }
+  .modes label small { display: block; font-weight: 400; color: var(--muted); font-size: .8rem; }
+  .modes input:checked + label { background: var(--brand); color: #fff; }
+  .modes input:checked + label small { color: rgba(255,255,255,.85); }
+  .modes input:focus-visible + label { outline: 3px solid var(--brand-text); outline-offset: -5px; }
 
   .result {
     margin-top: 16px;
@@ -102,6 +119,7 @@
     text-align: center;
   }
   .big { font-size: 3.4rem; font-weight: 800; color: var(--brand-text); line-height: 1.1; }
+  #r_pre { font-weight: 500; margin-bottom: 2px; }
   #r_label { font-size: 1.1rem; font-weight: 500; }
   #r_sets { color: var(--muted); margin-top: 4px; }
   .breakdown {
@@ -169,8 +187,15 @@
 </header>
 
 <main>
-  <h1>Kolikokrat lahko napolnim LiPo na terenu?</h1>
-  <p class="sub">Izračunajte, kolikokrat lahko z večjim terenskim akumulatorjem napolnite svoje LiPo akumulatorje.</p>
+  <h1>Kalkulator polnjenja LiPo na terenu</h1>
+  <p class="sub" id="sub">Izračunajte, kako velik terenski akumulator potrebujete za želeno število polnjenj.</p>
+
+  <div class="modes" role="radiogroup" aria-label="Način izračuna">
+    <input type="radio" name="mode" id="mode_size" value="size" checked>
+    <label for="mode_size">Kako velik akumulator potrebujem?<small>Izračun kapacitete terenskega akumulatorja</small></label>
+    <input type="radio" name="mode" id="mode_count" value="count">
+    <label for="mode_count">Kolikokrat lahko napolnim?<small>Izračun števila polnjenj</small></label>
+  </div>
 
   <div class="grid">
     <section class="card">
@@ -194,7 +219,12 @@
       <input id="p_cap" type="number" min="1" step="50" value="1500">
       <label for="p_cnt">Število akumulatorjev</label>
       <input id="p_cnt" type="number" min="1" step="1" value="1">
-      <div class="hint">Prikazano bo tudi, kolikokrat lahko napolnite celoten komplet.</div>
+      <div class="hint" id="p_cnt_hint">Prikazano bo tudi, kolikokrat lahko napolnite celoten komplet.</div>
+      <div data-mode="size">
+        <label for="n_req">Želeno število polnjenj</label>
+        <input id="n_req" type="number" min="1" step="1" value="5">
+        <div class="hint">Pri več akumulatorjih: kolikokrat želite napolniti celoten komplet.</div>
+      </div>
       <label for="p_dod">Porabljena kapaciteta na let (%)</label>
       <input id="p_dod" type="number" min="1" max="100" step="5" value="80">
       <div class="hint">Pristanek pri ~3,7 V/celico (v mirovanju) ≈ 80 % porabljeno.</div>
@@ -214,7 +244,7 @@
           <label for="f_volt">Nazivna napetost (V)</label>
           <input id="f_volt" type="number" min="1" step="0.1" value="22.2">
         </div>
-        <div>
+        <div data-mode="count">
           <label for="f_cap">Kapaciteta</label>
           <div class="row">
             <input id="f_cap" type="number" min="0" step="1" value="16000">
@@ -237,14 +267,15 @@
   </div>
 
   <div class="result" aria-live="polite">
-    <div class="big" id="r_charges">–</div>
-    <div id="r_label">polnjenj</div>
+    <div id="r_pre"></div>
+    <div class="big" id="r_big">–</div>
+    <div id="r_label"></div>
     <div id="r_sets"></div>
     <div class="breakdown">
-      <div class="stat"><b id="r_field_wh">–</b><span>Uporabna energija terenskega akumulatorja</span></div>
-      <div class="stat"><b id="r_out_wh">–</b><span>Oddana energija po izgubah polnilnika</span></div>
-      <div class="stat"><b id="r_pack_wh">–</b><span>Energija za eno polnjenje</span></div>
-      <div class="stat"><b id="r_exact">–</b><span>Natančno število polnjenj</span></div>
+      <div class="stat"><b id="s1v">–</b><span id="s1l"></span></div>
+      <div class="stat"><b id="s2v">–</b><span id="s2l"></span></div>
+      <div class="stat"><b id="s3v">–</b><span id="s3l"></span></div>
+      <div class="stat"><b id="s4v">–</b><span id="s4l"></span></div>
     </div>
     <div class="warn" id="r_warn"></div>
   </div>
@@ -256,6 +287,9 @@
        <code>Oddana energija = energija terenskega × izkoristek polnilnika</code><br>
        <code>Energija na polnjenje = celice × U celice × Ah × porabljena %</code><br>
        <code>Število polnjenj = oddana energija ÷ energija na polnjenje</code></p>
+    <p>Pri izračunu potrebne velikosti gre račun v obratni smeri:</p>
+    <p><code>Potrebna Wh = energija na polnjenje × št. akumulatorjev × želeno št. polnjenj ÷ izkoristek ÷ uporabna %</code><br>
+       <code>Potrebna Ah = potrebna Wh ÷ U terenskega akumulatorja</code></p>
     <p>Rezultat je ocena: mraz, visoki polnilni tokovi, polnilnik, ki mora napetost dvigovati (terenski akumulator z nižjo napetostjo od polnjenega), in starejši akumulatorji dejansko število polnjenj zmanjšajo.</p>
   </details>
 
@@ -298,7 +332,7 @@
 <script>
 (function () {
   const $ = (id) => document.getElementById(id);
-  const ids = ["p_cells", "p_chem", "p_cap", "p_cnt", "p_dod", "f_type", "f_volt", "f_cap", "f_unit", "f_dod", "eff"];
+  const ids = ["p_cells", "p_chem", "p_cap", "p_cnt", "n_req", "p_dod", "f_type", "f_volt", "f_cap", "f_unit", "f_dod", "eff"];
   const STORE = "lipo_calc_v1";
 
   const presets = {
@@ -322,11 +356,27 @@
     if (m === 3 || m === 4) return forms[2];
     return forms[3];
   }
+  const POLNJENJE = ["polnjenje", "polnjenji", "polnjenja", "polnjenj"];
+
+  const mode = () => ($("mode_count").checked ? "count" : "size");
+
+  function applyMode() {
+    const m = mode();
+    document.querySelectorAll("[data-mode]").forEach((el) => { el.hidden = el.dataset.mode !== m; });
+    $("p_cnt_hint").hidden = m !== "count";
+    $("sub").textContent = m === "size"
+      ? "Izračunajte, kako velik terenski akumulator potrebujete za želeno število polnjenj."
+      : "Izračunajte, kolikokrat lahko z večjim terenskim akumulatorjem napolnite svoje LiPo akumulatorje.";
+    $("f_volt").disabled = m === "count" && $("f_unit").value === "Wh";
+  }
 
   function load() {
     try {
       const saved = JSON.parse(localStorage.getItem(STORE) || "null");
-      if (saved) ids.forEach((id) => { if (saved[id] != null) $(id).value = saved[id]; });
+      if (saved) {
+        ids.forEach((id) => { if (saved[id] != null) $(id).value = saved[id]; });
+        if (saved.mode === "count") $("mode_count").checked = true;
+      }
     } catch (e) {}
     const p = presets[$("f_type").value] || presets.custom;
     $("f_volt_hint").textContent = p.hint;
@@ -334,70 +384,96 @@
 
   function save() {
     try {
-      const data = {};
+      const data = { mode: mode() };
       ids.forEach((id) => (data[id] = $(id).value));
       localStorage.setItem(STORE, JSON.stringify(data));
     } catch (e) {}
   }
 
+  function setStats(rows) {
+    rows.forEach(([v, l], i) => { $("s" + (i + 1) + "v").textContent = v; $("s" + (i + 1) + "l").textContent = l; });
+  }
+
   function calc() {
+    const m = mode();
     const cells = num("p_cells"), cellV = num("p_chem"), pCap = num("p_cap") / 1000;
     const packs = Math.max(1, Math.round(num("p_cnt")) || 1);
     const pUsed = num("p_dod") / 100;
-    const fV = num("f_volt"), fCap = num("f_cap"), unit = $("f_unit").value;
-    const fUse = num("f_dod") / 100, eff = num("eff") / 100;
+    const fV = num("f_volt"), fUse = num("f_dod") / 100, eff = num("eff") / 100;
+    const packV = cells * cellV;
+    const packWh = packV * pCap * pUsed;
 
+    if (m === "size") {
+      const nReq = Math.max(1, Math.round(num("n_req")) || 1);
+      const totalCharges = nReq * packs;
+      const deliveredWh = packWh * totalCharges;
+      const drawnWh = deliveredWh / eff;
+      const nominalWh = drawnWh / fUse;
+      const ah = nominalWh / fV;
+      const ok = [deliveredWh, nominalWh, ah].every(Number.isFinite) && ah > 0;
+
+      $("r_pre").textContent = "Potrebujete terenski akumulator s kapaciteto vsaj";
+      $("r_big").textContent = ok ? fmt(ah, ah < 10 ? 1 : 0) + " Ah" : "–";
+      $("r_label").textContent = ok ? `pri ${fmt(fV)} V · ${fmt(nominalWh, 0)} Wh nazivno` : "";
+      $("r_sets").textContent = ok
+        ? (packs > 1
+            ? `za ${nReq}× polnjenje kompleta ${packs} akumulatorjev (skupaj ${totalCharges} ${plural(totalCharges, POLNJENJE)})`
+            : `za ${nReq} ${plural(nReq, POLNJENJE)}`)
+        : "";
+      setStats([
+        [fmt(packWh) + " Wh", "Energija za eno polnjenje"],
+        [fmt(deliveredWh) + " Wh", "Skupaj potrebna energija v akumulatorjih"],
+        [fmt(drawnWh) + " Wh", "Odvzeto iz terenskega (z izgubami polnilnika)"],
+        [fmt(ah * 1000, 0) + " mAh", "Potrebna nazivna kapaciteta"]
+      ]);
+      warn(ok, fV, packV);
+      return;
+    }
+
+    const fCap = num("f_cap"), unit = $("f_unit").value;
     const fieldWhRaw = unit === "Wh" ? fCap : fV * (unit === "Ah" ? fCap : fCap / 1000);
     const fieldWh = fieldWhRaw * fUse;
     const outWh = fieldWh * eff;
-    const packV = cells * cellV;
-    const packWh = packV * pCap * pUsed;
     const exact = outWh / packWh;
-
     const ok = [fieldWh, outWh, packWh, exact].every(Number.isFinite) && packWh > 0;
     const charges = ok ? Math.floor(exact + 1e-9) : NaN;
 
-    $("r_charges").textContent = ok ? charges : "–";
-    $("r_label").textContent = ok
-      ? plural(charges, ["polnjenje", "polnjenji", "polnjenja", "polnjenj"])
-      : "polnjenj";
-
-    if (ok && packs > 1) {
-      const sets = Math.floor(exact / packs + 1e-9);
-      $("r_sets").textContent = `Celoten komplet ${packs} akumulatorjev lahko napolnite ${sets}-krat.`;
-    } else {
-      $("r_sets").textContent = "";
-    }
-
-    $("r_field_wh").textContent = fmt(fieldWh) + " Wh";
-    $("r_out_wh").textContent = fmt(outWh) + " Wh";
-    $("r_pack_wh").textContent = fmt(packWh) + " Wh";
-    $("r_exact").textContent = fmt(exact, 2);
-
-    let warn = "";
-    if (ok && unit !== "Wh" && fV < packV) {
-      warn = `Terenski akumulator (${fmt(fV)} V) ima nižjo napetost kot akumulator, ki ga polnite (${fmt(packV)} V) – polnilnik mora napetost dvigniti, izkoristek je zato običajno nižji.`;
-    }
-    $("r_warn").textContent = warn;
+    $("r_pre").textContent = "Akumulator lahko napolnite";
+    $("r_big").textContent = ok ? charges + "×" : "–";
+    $("r_label").textContent = ok ? plural(charges, POLNJENJE) : "";
+    $("r_sets").textContent = ok && packs > 1
+      ? `Celoten komplet ${packs} akumulatorjev lahko napolnite ${Math.floor(exact / packs + 1e-9)}-krat.`
+      : "";
+    setStats([
+      [fmt(fieldWh) + " Wh", "Uporabna energija terenskega akumulatorja"],
+      [fmt(outWh) + " Wh", "Oddana energija po izgubah polnilnika"],
+      [fmt(packWh) + " Wh", "Energija za eno polnjenje"],
+      [fmt(exact, 2), "Natančno število polnjenj"]
+    ]);
+    warn(ok && unit !== "Wh", fV, packV);
   }
+
+  function warn(show, fV, packV) {
+    $("r_warn").textContent = show && fV < packV
+      ? `Terenski akumulator (${fmt(fV)} V) ima nižjo napetost kot akumulator, ki ga polnite (${fmt(packV)} V) – polnilnik mora napetost dvigniti, izkoristek je zato običajno nižji.`
+      : "";
+  }
+
+  const update = () => { applyMode(); calc(); save(); };
 
   $("f_type").addEventListener("change", () => {
     const p = presets[$("f_type").value];
     if (p.volt != null) $("f_volt").value = p.volt;
     if (p.dod != null) $("f_dod").value = p.dod;
     $("f_volt_hint").textContent = p.hint;
-    calc(); save();
+    update();
   });
-
-  $("f_unit").addEventListener("change", () => {
-    $("f_volt").disabled = $("f_unit").value === "Wh";
-    calc(); save();
-  });
-
-  ids.forEach((id) => $(id).addEventListener("input", () => { calc(); save(); }));
+  document.querySelectorAll('input[name="mode"]').forEach((r) => r.addEventListener("change", update));
+  ids.forEach((id) => $(id).addEventListener("input", update));
+  $("f_unit").addEventListener("change", update);
 
   load();
-  $("f_volt").disabled = $("f_unit").value === "Wh";
+  applyMode();
   calc();
 })();
 </script>
